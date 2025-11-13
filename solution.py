@@ -144,10 +144,52 @@ def hamiltonian_bonus(graph, start, end) -> bool:
     # return True if a Hamiltonian path exists from start to end, else False
 
 def main():
+    """
     n = 3 # You can change n to generate larger or smaller graphs
     graph, start, end = generate_tricky_graph(n)
     log_graph(graph, start, end)
+    """
     
+    n_values = [4, 5, 6, 7, 8] 
+    experimental_analysis(n_values)
+
+# Helper function for obtaining experimental results
+def experimental_analysis(n_values, repeat_count=10):
+    import time
+    import matplotlib.pyplot as plt
+    print("Starting experimental analysis...")
+    
+    avg_durations = []
+
+    for n in n_values:
+        durations_for_n = []
+
+        for _ in range(repeat_count):
+
+            graph, start, end = generate_tricky_graph(n)
+
+            # Measure only the naive algorithm execution time
+            start_time = time.perf_counter()
+            hamiltonian_naive(graph, start, end)
+            end_time = time.perf_counter()
+
+            durations_for_n.append(end_time - start_time)
+
+        avg_time_for_n = sum(durations_for_n) / repeat_count
+        avg_durations.append(avg_time_for_n)
+        print(f"n={n}, avg time over {repeat_count} runs: {avg_time_for_n} sec")
+
+    # Plot
+    plt.figure(figsize=(8, 5))
+    plt.plot(n_values, avg_durations, marker='o')
+    plt.title("Naive Hamiltonian Path Execution Time")
+    plt.xlabel("n (subset size)")
+    plt.ylabel("Average execution time (seconds)")
+    plt.grid(True)
+    plt.show()
+
+
+# Helper functions to log graph details
 def log_graph(graph, start, end):
     print("Generated Graph Adjacency Matrix:")
     for row in graph:

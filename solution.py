@@ -1,3 +1,4 @@
+import itertools
 import random 
 # ------------------------------
 # Graph construction (spec §2.1)
@@ -50,14 +51,94 @@ def generate_tricky_graph(n):
 
     return graph, start, end
 
+# Part 1
 def hamiltonian_naive(graph, start, end) -> bool:
-    pass  # Placeholder for naive implementation
-    # return True if a Hamiltonian path exists from start to end, else False
+    """
+    Naive Hamiltonian Path algorithm that checks all subsets of vertices of size n
+    and all permutations of those vertices to determine if there exists a Hamiltonian path
+    
+    Parameters:
+        graph: adjacency matrix of the graph (list of lists)
+        start: start vertex (int)
+        end: end vertex (int)
+    Returns:
+        bool: True if a Hamiltonian path exists from start to end, else False
+    """
+    N = len(graph)       # N = 3n
+    n = N // 3
+    V = set(range(N))    # V = {0, 1, ..., 3n−1}
 
+    # Check all subsets S of V with size n
+    for S in itertools.combinations(V, n):
+        if start not in S or end not in S: # if not both in S, skip
+            continue
+
+        L = sorted(list(S))
+
+        # Step 4: Build the induced subgraph H[n][n]
+        H = [[0] * n for _ in range(n)]
+        for a in range(n):
+            for b in range(n):
+                H[a][b] = graph[L[a]][L[b]]
+
+        # Find the indexes of start and end in L
+        s = L.index(start)
+        t = L.index(end)
+
+        if all_permutations(H, s, t):
+            return True  # Found a valid subset + Hamiltonian path
+
+    # No valid subset + Hamiltonian path found
+    return False
+
+def all_permutations(H, s, t) -> bool:
+    """
+    All Permutations is an algorithm that checks all permutations of vertices
+    in a graph H to determine if there exists a Hamiltonian path from vertex s to vertex t.
+    
+    Parameters:
+        H: adjacency matrix of the graph (list of lists)
+        s: start vertex (int)
+        t: end vertex (int)
+    Returns:
+        bool: True if a Hamiltonian path exists from s to t, else False
+    """
+    n = len(H)
+
+    # Vertices except start and end
+    middle_vertices = [v for v in range(n) if v != s and v != t]
+    
+    for middle_perm in itertools.permutations(middle_vertices):
+        perm = [s] + list(middle_perm) + [t] # add start and end vertices
+        if hamiltonian_check(H, perm):
+            return True # Found a valid Hamiltonian path
+    return False # None of the permutations formed a Hamiltonian path
+
+def hamiltonian_check(H, perm) -> bool:
+    """
+    Hamiltonian Check is a helper function to check if a given graph `H` has
+    necessary edges given in the `perm` permutation of vertices.
+    
+    Parameters:
+        H: Graph represented by an 2D adjacency matrix (list of lists)
+        perm: A list of vertex indices representing a permutation of vertices from 0 to n-1
+        (list of integers)
+    Returns:
+        bool: True if `perm` represents a Hamiltonian path, False otherwise
+    """
+    n = len(H)
+    for i in range(n - 1):
+        if H[perm[i]][perm[i + 1]] == 0:
+            return False
+    
+    return True
+
+# Part 2
 def hamiltonian_optimized(graph, start, end) -> bool:
     pass # Placeholder for optimized implementation
     # return True if a Hamiltonian path exists from start to end, else False
 
+# Bonus Part
 def hamiltonian_bonus(graph, start, end) -> bool:
     pass  # Placeholder for bonus implementation
     # return True if a Hamiltonian path exists from start to end, else False

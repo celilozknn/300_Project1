@@ -6,3 +6,9 @@ __pycache__/
 
 # macOS system file
 .DS_Store
+
+# Pdf Description File
+CMPE_300_P1.pdf
+
+# Celil related files
+celil*.*

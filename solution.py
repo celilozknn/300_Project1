@@ -54,6 +54,10 @@ def generate_tricky_graph(n):
     return graph, start, end
 
 # Part 1
+
+########################################
+# NAIVE
+########################################
 def hamiltonian_check(H, perm) -> bool:
     """
     Hamiltonian Check is a helper function to check if a given graph `H` has
@@ -135,9 +139,58 @@ def hamiltonian_naive(graph, start, end) -> bool:
     return False
 
 # Part 2
-def hamiltonian_optimized(graph, start, end) -> bool:
-    pass # Placeholder for optimized implementation
-    # return True if a Hamiltonian path exists from start to end, else False
+
+########################################
+# OPTIMIZED
+########################################
+def bfs_component(graph, start, n):
+    """
+    Reconstructs the hidden subgraph containing 'start' using BFS.
+    Each of the 3 subgraphs has exactly n vertices.
+    """
+    visited = set([start])
+    queue = [start]
+
+    while queue and len(visited) < n:
+        u = queue.pop(0)
+        for v in range(len(graph)):
+            if graph[u][v] == 1 and v not in visited:
+                visited.add(v)
+                queue.append(v)
+
+    return visited
+
+def hamiltonian_optimized(graph, start, end, n):
+    """
+    Optimized Hamiltonian path check that identifies the correct subgraph
+    even after random vertex permutation.
+    """
+
+    # reconstruct the correct subgraph of size n using BFS
+    component = bfs_component(graph, start, n)
+
+    # if end is not in the same BFS component, no Hamiltonian path exists
+    if end not in component:
+        return False
+
+    # convert BFS component to an ordered list of vertices
+    L = sorted(component)
+
+    # build adjacency matrix H for this subgraph
+    H = [[0] * n for _ in range(n)]
+    index_map = {v: i for i, v in enumerate(L)}
+
+    for i in range(n):
+        for j in range(n):
+            u, v = L[i], L[j]
+            H[i][j] = graph[u][v]
+
+    # map start/end into subgraph indices
+    sL = index_map[start]
+    tL = index_map[end]
+
+    # check permutations inside the correct subgraph
+    return all_permutations(H, sL, tL)
 
 # Bonus Part
 def hamiltonian_bonus(graph, start, end) -> bool:

@@ -12,3 +12,9 @@ CMPE_300_P1.pdf
 
 # Celil related files
 celil*.*
+
+# Ebrar related files
+ebrar*.*
+
+# Image files
+*.png

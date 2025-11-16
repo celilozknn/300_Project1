@@ -1,5 +1,9 @@
 import itertools
+import statistics
 import random 
+import time
+import matplotlib.pyplot as plt
+
 # ------------------------------
 # Graph construction (spec §2.1)
 # ------------------------------
@@ -35,8 +39,6 @@ def generate_tricky_graph(n):
     add_connected_subgraph(graph, C)
 
     # Hide structure by permuting vertex labels; remap start/end accordingly
-    # perm is new_to_old, new_to_old[0] means the prev version of the new vertex 0
-    # inv is old_to_new, old_to_new[6] means the new version of the old vertex 6
     perm = list(range(N))
     random.shuffle(perm)
     inv = [0] * N
@@ -96,7 +98,7 @@ def all_permutations(H, s, t) -> bool:
     for middle_perm in itertools.permutations(middle_vertices):
         perm = [s] + list(middle_perm) + [t] # add start and end vertices
         if hamiltonian_check(H, perm):
-            return True # Found a valid Hamiltonian path
+            return True
     return False # None of the permutations formed a Hamiltonian path
 
 def hamiltonian_naive(graph, start, end) -> bool:
@@ -122,7 +124,7 @@ def hamiltonian_naive(graph, start, end) -> bool:
 
         L = sorted(list(S))
 
-        # Step 4: Build the induced subgraph H[n][n]
+        # Build the induced subgraph H[n][n]
         H = [[0] * n for _ in range(n)]
         for a in range(n):
             for b in range(n):
@@ -133,7 +135,7 @@ def hamiltonian_naive(graph, start, end) -> bool:
         t = L.index(end)
 
         if all_permutations(H, s, t):
-            return True  # Found a valid subset + Hamiltonian path
+            return True  
 
     # No valid subset + Hamiltonian path found
     return False
@@ -160,86 +162,100 @@ def bfs_component(graph, start, n):
 
     return visited
 
-def hamiltonian_optimized(graph, start, end, n):
+def hamiltonian_optimized(graph, start, end):
     """
     Optimized Hamiltonian path check that identifies the correct subgraph
     even after random vertex permutation.
     """
+    N = len(graph)  
+    n = N // 3
 
-    # reconstruct the correct subgraph of size n using BFS
+    # Reconstruct the correct subgraph of size n using BFS
     component = bfs_component(graph, start, n)
 
-    # if end is not in the same BFS component, no Hamiltonian path exists
+    # If end is not in the same BFS component, no Hamiltonian path exists
     if end not in component:
         return False
-
-    # convert BFS component to an ordered list of vertices
+    
+    # Convert BFS component to an ordered list of vertices
     L = sorted(component)
-
-    # build adjacency matrix H for this subgraph
+    
+    # Build adjacency matrix H for this subgraph
     H = [[0] * n for _ in range(n)]
-    index_map = {v: i for i, v in enumerate(L)}
-
     for i in range(n):
         for j in range(n):
             u, v = L[i], L[j]
             H[i][j] = graph[u][v]
 
-    # map start/end into subgraph indices
-    sL = index_map[start]
-    tL = index_map[end]
+    # Find indices of start and end in L
+    s = L.index(start)
+    t = L.index(end)
 
-    # check permutations inside the correct subgraph
-    return all_permutations(H, sL, tL)
+    # Check permutations inside the correct subgraph
+    return all_permutations(H, s, t)
 
-# Bonus Part
+# Part 3
+
+########################################
+# BONUS
+########################################
 def hamiltonian_bonus(graph, start, end) -> bool:
     pass  # Placeholder for bonus implementation
     # return True if a Hamiltonian path exists from start to end, else False
 
 def main():
+    plot_time_vs_n(start_n=4, end_n=13, optimized=True, logy=True, logx=False)
  
-    n = 3 # You can change n to generate larger or smaller graphs
-    graph, start, end = generate_tricky_graph(n)
-   
+def run_naive_stats(n):
+    times = []
+    avg_time = 0
+    for _ in range(10):  # 10 rounds
+        graph, start, end = generate_tricky_graph(n)
+        start_time = time.time()
+        hamiltonian_naive(graph, start, end)
+        end_time = time.time()
+        times.append(end_time - start_time)
+    return statistics.mean(times)
+
+def run_optimized_stats(n):
+  times = []
+  avg_time = 0
+  for _ in range(10):  # 10 rounds
+      graph, start, end = generate_tricky_graph(n)
+      start_time = time.perf_counter()
+      hamiltonian_optimized(graph, start, end)
+      end_time = time.perf_counter()
+      times.append(end_time - start_time)
+  return statistics.mean(times)
+
+def plot_time_vs_n(start_n=4, end_n=8, optimized=False, logy=True, logx=False):
     """
-    n_values = [4, 5, 6, 7, 8] 
-    experimental_analysis(n_values)
+    Plots average running time vs n for the Hamiltonian path algorithms.
+    If optimized=True, uses the optimized algorithm; else uses naive.
+    Set logy = True for log scale on y-axis, logx = True for log scale on x-axis.
     """
-
-# Helper function for obtaining experimental results
-def experimental_analysis(n_values, repeat_count=10):
-    import time
-    import matplotlib.pyplot as plt
-    print("Starting experimental analysis...")
-    
-    avg_durations = []
-
-    for n in n_values:
-        durations_for_n = []
-
-        for _ in range(repeat_count):
-
-            graph, start, end = generate_tricky_graph(n)
-
-            # Measure only the naive algorithm execution time
-            start_time = time.perf_counter()
-            hamiltonian_naive(graph, start, end)
-            end_time = time.perf_counter()
-
-            durations_for_n.append(end_time - start_time)
-
-        avg_time_for_n = sum(durations_for_n) / repeat_count
-        avg_durations.append(avg_time_for_n)
-        print(f"n={n}, avg time over {repeat_count} runs: {avg_time_for_n} sec")
-
-    # Plot
+    ns = list(range(start_n, end_n + 1))
+    times = []
+    for n in ns:
+        if optimized:
+            avg_time = run_optimized_stats(n)
+        else:
+            avg_time = run_naive_stats(n)
+        times.append(avg_time)
+        print(f"n={n}: avg_time={avg_time:.8f} seconds")
+    label = "Optimized" if optimized else "Naive"
     plt.figure(figsize=(8, 5))
-    plt.plot(n_values, avg_durations, marker='o')
-    plt.title("Naive Hamiltonian Path Execution Time")
-    plt.xlabel("n (subset size)")
-    plt.ylabel("Average execution time (seconds)")
-    plt.grid(True)
+    plt.plot(ns, times, marker='o', label=label)
+    plt.xlabel('n (subgraph size)')
+    plt.ylabel('Average Time (seconds)')
+    plt.title(f"Hamiltonian Path: Time vs n ({label})")
+    plt.legend()
+    plt.grid(True, which='both', ls='--', alpha=0.6)
+    if logy:
+        plt.yscale('log')
+    if logx:
+        plt.xscale('log')
+    plt.tight_layout()
     plt.show()
 
 if __name__ == "__main__":
